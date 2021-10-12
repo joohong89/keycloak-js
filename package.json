@@ -2,7 +2,7 @@
   "name": "keycloak-js",
   "version": "1.0.0",
   "description": "This is a copy from keycloak-js files from the master branch of keycloak. There are addtional implementation of Adapters for capacitor. ",
-  "main": "index.js",
+  "main": "keycloak.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

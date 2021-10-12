@@ -1,8 +1,8 @@
 {
   "name": "keycloak-js",
-  "version": "14.0.0",
+  "version": "15.02.0.0",
   "description": "This is a copy from keycloak-js files from the master branch of keycloak. There are addtional implementation of Adapters for capacitor. ",
-  "main": "keycloak.js",
+  "main": "dist/keycloak.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -16,6 +16,10 @@
     "url": "https://github.com/joohong89/keycloak-js/issues"
   },
   "homepage": "https://github.com/joohong89/keycloak-js#readme",
-  "typings": "keycloak.d.ts"
- 
+  "typings": "dist/keycloak.d.ts",
+  "dependencies": {
+    "base64-js": "^1.5.1",
+    "js-sha256": "^0.9.0"
+  },
+  "bundleDependencies": false
 }

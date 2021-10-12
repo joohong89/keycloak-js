@@ -15,7 +15,7 @@
   "bugs": {
     "url": "https://github.com/joohong89/keycloak-js/issues"
   },
-  "homepage": "https://github.com/joohong89/keycloak-js#readme"
-  "typings": "keycloak.d.ts",
+  "homepage": "https://github.com/joohong89/keycloak-js#readme",
+  "typings": "keycloak.d.ts"
  
 }

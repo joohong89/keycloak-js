@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+import { Plugins, AppState } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
+
+const { App } = Plugins;
+
 (function(root, factory) {
     if ( typeof exports === 'object' ) {
         if ( typeof module === 'object' ) {
@@ -105,14 +110,16 @@
             kc.authenticated = false;
 
             callbackStorage = createCallbackStorage();
-            var adapters = ['default', 'cordova', 'cordova-native'];
+            var adapters = ['default', 'cordova', 'cordova-native', 'capacitor', 'capacitor-native'];
 
             if (initOptions && adapters.indexOf(initOptions.adapter) > -1) {
                 adapter = loadAdapter(initOptions.adapter);
             } else if (initOptions && typeof initOptions.adapter === "object") {
                 adapter = initOptions.adapter;
             } else {
-                if (window.Cordova || window.cordova) {
+                if (window.Capacitor || window.capacitor) {
+                    adapter = loadAdapter('capacitor');
+                }else if (window.Cordova || window.cordova) {
                     adapter = loadAdapter('cordova');
                 } else {
                     adapter = loadAdapter();
@@ -1626,6 +1633,79 @@
                             return kc.redirectUri;
                         } else {
                             return "http://localhost";
+                        }
+                    }
+                }
+            }
+
+            if (type == 'capacitor-native') {
+                loginIframe.enable = false;
+
+                return {
+                    login: function(options) {
+                        var promise = createPromise();
+                        var loginUrl = kc.createLoginUrl(options);
+
+                        const addUrlListener = App.addListener('appUrlOpen', (data) => {
+
+                            if(data.url ){
+                                var oauth = parseCallback(data.url);
+                                processCallback(oauth, promise);
+                            }
+
+                            addUrlListener.remove();
+                        });
+
+                        window.open(loginUrl, '_system');
+
+                        return promise.promise;
+                    },
+
+                    logout: function(options) {
+                        var promise = createPromise();
+                        var logoutUrl = kc.createLogoutUrl(options);
+
+                        const addUrlListener = App.addListener('appUrlOpen', (data) => {
+                            kc.clearToken();
+                            promise.setSuccess();
+                            addUrlListener.remove();
+                        });
+
+                        window.open(logoutUrl, '_system');
+                        return promise.promise;
+                    },
+
+                    register : function(options) {
+                        var promise = createPromise();
+                        var registerUrl = kc.createRegisterUrl(options);
+
+                        App.addListener('appUrlOpen', (data) => {
+                            var oauth = parseCallback(data.url);
+                            processCallback(oauth, promise);
+                        });
+                        window.open(registerUrl, '_system');
+
+                        return promise.promise;
+
+                    },
+
+                    accountManagement : function() {
+                        var accountUrl = kc.createAccountUrl();
+
+                        if (typeof accountUrl !== 'undefined') {
+                            window.open(accountUrl, '_system');
+                        } else {
+                            throw "Not supported by the OIDC server";
+                        }
+                    },
+
+                    redirectUri: function(options) {
+                        if (options && options.redirectUri) {
+                            return options.redirectUri;
+                        } else if (kc.redirectUri) {
+                            return kc.redirectUri;
+                        } else {
+                            return "http://localhost/redirect";
                         }
                     }
                 }

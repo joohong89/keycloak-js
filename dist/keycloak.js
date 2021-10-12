@@ -15,11 +15,6 @@
  * limitations under the License.
  */
 
-import { Plugins, AppState } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
-
-const { App } = Plugins;
-
 (function(root, factory) {
     if ( typeof exports === 'object' ) {
         if ( typeof module === 'object' ) {
@@ -110,16 +105,14 @@ const { App } = Plugins;
             kc.authenticated = false;
 
             callbackStorage = createCallbackStorage();
-            var adapters = ['default', 'cordova', 'cordova-native', 'capacitor', 'capacitor-native'];
+            var adapters = ['default', 'cordova', 'cordova-native'];
 
             if (initOptions && adapters.indexOf(initOptions.adapter) > -1) {
                 adapter = loadAdapter(initOptions.adapter);
             } else if (initOptions && typeof initOptions.adapter === "object") {
                 adapter = initOptions.adapter;
             } else {
-                if (window.Capacitor || window.capacitor) {
-                    adapter = loadAdapter('capacitor');
-                }else if (window.Cordova || window.cordova) {
+                if (window.Cordova || window.cordova) {
                     adapter = loadAdapter('cordova');
                 } else {
                     adapter = loadAdapter();
@@ -202,6 +195,12 @@ const { App } = Plugins;
                 if (typeof initOptions.scope === 'string') {
                     kc.scope = initOptions.scope;
                 }
+
+                if (typeof initOptions.messageReceiveTimeout === 'number' && initOptions.messageReceiveTimeout > 0) {
+                    kc.messageReceiveTimeout = initOptions.messageReceiveTimeout;
+                } else {
+                    kc.messageReceiveTimeout = 10000;
+                }
             }
 
             if (!kc.responseMode) {
@@ -218,8 +217,8 @@ const { App } = Plugins;
             initPromise.promise.then(function() {
                 kc.onReady && kc.onReady(kc.authenticated);
                 promise.setSuccess(kc.authenticated);
-            }).catch(function(errorData) {
-                promise.setError(errorData);
+            }).catch(function(error) {
+                promise.setError(error);
             });
 
             var configPromise = loadConfig(config);
@@ -232,8 +231,8 @@ const { App } = Plugins;
 
                     kc.login(options).then(function () {
                         initPromise.setSuccess();
-                    }).catch(function () {
-                        initPromise.setError();
+                    }).catch(function (error) {
+                        initPromise.setError(error);
                     });
                 }
 
@@ -271,8 +270,8 @@ const { App } = Plugins;
                                     } else {
                                         initPromise.setSuccess();
                                     }
-                                }).catch(function () {
-                                    initPromise.setError();
+                                }).catch(function (error) {
+                                    initPromise.setError(error);
                                 });
                             });
                         } else {
@@ -297,8 +296,8 @@ const { App } = Plugins;
                 if (callback && callback.valid) {
                     return setupCheckLoginIframe().then(function() {
                         processCallback(callback, initPromise);
-                    }).catch(function (e) {
-                        initPromise.setError();
+                    }).catch(function (error) {
+                        initPromise.setError(error);
                     });
                 } else if (initOptions) {
                     if (initOptions.token && initOptions.refreshToken) {
@@ -314,20 +313,20 @@ const { App } = Plugins;
                                     } else {
                                         initPromise.setSuccess();
                                     }
-                                }).catch(function () {
-                                    initPromise.setError();
+                                }).catch(function (error) {
+                                    initPromise.setError(error);
                                 });
                             });
                         } else {
                             kc.updateToken(-1).then(function() {
                                 kc.onAuthSuccess && kc.onAuthSuccess();
                                 initPromise.setSuccess();
-                            }).catch(function() {
+                            }).catch(function(error) {
                                 kc.onAuthError && kc.onAuthError();
                                 if (initOptions.onLoad) {
                                     onLoad();
                                 } else {
-                                    initPromise.setError();
+                                    initPromise.setError(error);
                                 }
                             });
                         }
@@ -358,13 +357,15 @@ const { App } = Plugins;
             }
 
             configPromise.then(function () {
-                domReady().then(check3pCookiesSupported).then(processInit)
-                .catch(function() {
-                    promise.setError();
-                });
+                domReady()
+                    .then(check3pCookiesSupported)
+                    .then(processInit)
+                    .catch(function (error) {
+                        promise.setError(error);
+                    });
             });
-            configPromise.catch(function() {
-                promise.setError();
+            configPromise.catch(function (error) {
+                promise.setError(error);
             });
 
             return promise.promise;
@@ -701,8 +702,8 @@ const { App } = Plugins;
                 var iframePromise = checkLoginIframe();
                 iframePromise.then(function() {
                     exec();
-                }).catch(function() {
-                    promise.setError();
+                }).catch(function(error) {
+                    promise.setError(error);
                 });
             } else {
                 exec();
@@ -1213,6 +1214,19 @@ const { App } = Plugins;
             return p;
         }
 
+        // Function to extend existing native Promise with timeout
+        function applyTimeoutToPromise(promise, timeout, errorMessage) {
+            var timeoutHandle = null;
+            var timeoutPromise = new Promise(function (resolve, reject) {
+                timeoutHandle = setTimeout(function () {
+                    reject({ "error": errorMessage || "Promise is not settled within timeout of " + timeout + "ms" });
+                }, timeout);
+            });
+
+            return Promise.race([promise, timeoutPromise]).finally(function () {
+                clearTimeout(timeoutHandle);
+            });
+        }
 
         function setupCheckLoginIframe() {
             var promise = createPromise();
@@ -1344,7 +1358,7 @@ const { App } = Plugins;
                 promise.setSuccess();
             }
 
-            return promise.promise;
+            return applyTimeoutToPromise(promise.promise, kc.messageReceiveTimeout, "Timeout when waiting for 3rd party check iframe message.");
         }
 
         function loadAdapter(type) {
@@ -1612,79 +1626,6 @@ const { App } = Plugins;
                             return kc.redirectUri;
                         } else {
                             return "http://localhost";
-                        }
-                    }
-                }
-            }
-
-            if (type == 'capacitor-native') {
-                loginIframe.enable = false;
-
-                return {
-                    login: function(options) {
-                        var promise = createPromise();
-                        var loginUrl = kc.createLoginUrl(options);
-
-                        const addUrlListener = App.addListener('appUrlOpen', (data) => {
-
-                            if(data.url ){
-                                var oauth = parseCallback(data.url);
-                                processCallback(oauth, promise);
-                            }
-
-                            addUrlListener.remove();
-                        });
-
-                        window.open(loginUrl, '_system');
-
-                        return promise.promise;
-                    },
-
-                    logout: function(options) {
-                        var promise = createPromise();
-                        var logoutUrl = kc.createLogoutUrl(options);
-
-                        const addUrlListener = App.addListener('appUrlOpen', (data) => {
-                            kc.clearToken();
-                            promise.setSuccess();
-                            addUrlListener.remove();
-                        });
-
-                        window.open(logoutUrl, '_system');
-                        return promise.promise;
-                    },
-
-                    register : function(options) {
-                        var promise = createPromise();
-                        var registerUrl = kc.createRegisterUrl(options);
-
-                        App.addListener('appUrlOpen', (data) => {
-                            var oauth = parseCallback(data.url);
-                            processCallback(oauth, promise);
-                        });
-                        window.open(registerUrl, '_system');
-
-                        return promise.promise;
-
-                    },
-
-                    accountManagement : function() {
-                        var accountUrl = kc.createAccountUrl();
-
-                        if (typeof accountUrl !== 'undefined') {
-                            window.open(accountUrl, '_system');
-                        } else {
-                            throw "Not supported by the OIDC server";
-                        }
-                    },
-
-                    redirectUri: function(options) {
-                        if (options && options.redirectUri) {
-                            return options.redirectUri;
-                        } else if (kc.redirectUri) {
-                            return kc.redirectUri;
-                        } else {
-                            return "http://localhost/redirect";
                         }
                     }
                 }

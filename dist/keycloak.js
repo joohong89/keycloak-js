@@ -1717,8 +1717,22 @@
                             addUrlListener.remove();
                         });
 
-                        window.open(loginUrl, '_system');
+                        //window.open(loginUrl, '_blank', 'location=yes');
+                        window.Capacitor.Plugins.Browser.addListener('browserPageLoaded', () => {
+                            console.log("In-app browser page LOADED");
+                            //promise.setSuccess();
+                            //inAppBrowserListener.remove();
+                        });
 
+                        window.Capacitor.Plugins.Browser.addListener('browserFinished', () => {
+                            //promise.setSuccess();
+                            console.log("In-app browser page CLOSED");
+
+                            //inAppBrowserCloseListener.remove();
+                        });
+
+                        window.Capacitor.Plugins.Browser.open({toolbarColor:"#000000", url: loginUrl});
+                        console.log("In-app browser opened: " + loginUrl);
                         return promise.promise;
                     },
 
@@ -1732,7 +1746,14 @@
                             addUrlListener.remove();
                         });
 
-                        window.open(logoutUrl, '_system');
+                        const inAppWindowListener = window.Capacitor.Plugins.Browser.addListener('browserPageLoaded', () => {
+                            kc.clearToken();
+                            promise.setSuccess();
+                            inAppWindowListener.remove();
+                        });
+
+                        window.Capacitor.Plugins.Browser.open({toolbarColor:"#000000", url: logoutUrl});
+                        //window.open(logoutUrl, '_blank', 'location=yes');
                         return promise.promise;
                     },
 

@@ -1642,12 +1642,12 @@
                         var loginUrl = kc.createLoginUrl(options);
 
                         window.Capacitor.Plugins.App.addListener('appUrlOpen', (data) => {
-                            window.cordova.plugins.browsertab.close();
+                            window.Capacitor.Plugins.Browser.close();
                             var oauth = parseCallback(data.url);
                             processCallback(oauth, promise);
                         });
 
-                        window.cordova.plugins.browsertab.openUrl(loginUrl);
+                        window.Capacitor.Plugins.Browser.open({toolbarColor: "#000000", url:loginUrl});
                         return promise.promise;
                     },
 
@@ -1656,12 +1656,11 @@
                         var logoutUrl = kc.createLogoutUrl(options);
 
                         window.Capacitor.Plugins.App.addListener('appUrlOpen', (data) => {
-                            window.cordova.plugins.browsertab.close();
+                            window.Capacitor.Plugins.Browser.close();
                             kc.clearToken();
                             promise.setSuccess();
                         });
-
-                        window.cordova.plugins.browsertab.openUrl(logoutUrl);
+                        window.Capacitor.Plugins.Browser.open({toolbarColor: "#000000", url:logoutUrl});
                         return promise.promise;
                     },
 
@@ -1669,11 +1668,12 @@
                         var promise = createPromise();
                         var registerUrl = kc.createRegisterUrl(options);
                         window.Capacitor.Plugins.App.addListener('appUrlOpen', (data) => {
-                            window.cordova.plugins.browsertab.close();
+                            window.Capacitor.Plugins.Browser.close();
                             var oauth = parseCallback(data.url);
                             processCallback(oauth, promise);
                         });
-                        window.cordova.plugins.browsertab.openUrl(registerUrl);
+
+                        window.Capacitor.Plugins.Browser.open({toolbarColor: "#000000", url:registerUrl});
                         return promise.promise;
 
                     },
@@ -1681,7 +1681,7 @@
                     accountManagement : function() {
                         var accountUrl = kc.createAccountUrl();
                         if (typeof accountUrl !== 'undefined') {
-                            window.cordova.plugins.browsertab.openUrl(accountUrl);
+                            window.Capacitor.Plugins.Browser.open({toolbarColor: "#000000", url:accountUrl});
                         } else {
                             throw "Not supported by the OIDC server";
                         }

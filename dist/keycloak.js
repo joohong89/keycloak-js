@@ -1717,22 +1717,7 @@
                             addUrlListener.remove();
                         });
 
-                        //window.open(loginUrl, '_blank', 'location=yes');
-                        window.Capacitor.Plugins.Browser.addListener('browserPageLoaded', () => {
-                            console.log("In-app browser page LOADED");
-                            //promise.setSuccess();
-                            //inAppBrowserListener.remove();
-                        });
-
-                        window.Capacitor.Plugins.Browser.addListener('browserFinished', () => {
-                            //promise.setSuccess();
-                            console.log("In-app browser page CLOSED");
-
-                            //inAppBrowserCloseListener.remove();
-                        });
-
-                        window.Capacitor.Plugins.Browser.open({toolbarColor:"#000000", url: loginUrl});
-                        console.log("In-app browser opened: " + loginUrl);
+                        window.location.href = loginUrl;
                         return promise.promise;
                     },
 
@@ -1740,20 +1725,14 @@
                         var promise = createPromise();
                         var logoutUrl = kc.createLogoutUrl(options);
 
-                        const addUrlListener =window.Capacitor.Plugins.App.addListener('appUrlOpen', (data) => {
+                        const addUrlListener =  window.Capacitor.Plugins.App.addListener('appUrlOpen', (data) => {
                             kc.clearToken();
                             promise.setSuccess();
                             addUrlListener.remove();
                         });
 
-                        const inAppWindowListener = window.Capacitor.Plugins.Browser.addListener('browserPageLoaded', () => {
-                            kc.clearToken();
-                            promise.setSuccess();
-                            inAppWindowListener.remove();
-                        });
+                        window.location.href = logoutUrl;
 
-                        window.Capacitor.Plugins.Browser.open({toolbarColor:"#000000", url: logoutUrl});
-                        //window.open(logoutUrl, '_blank', 'location=yes');
                         return promise.promise;
                     },
 
@@ -1765,7 +1744,8 @@
                             var oauth = parseCallback(data.url);
                             processCallback(oauth, promise);
                         });
-                        window.open(registerUrl, '_system');
+
+                        window.location.href = registerUrl;
 
                         return promise.promise;
 
@@ -1775,7 +1755,7 @@
                         var accountUrl = kc.createAccountUrl();
 
                         if (typeof accountUrl !== 'undefined') {
-                            window.open(accountUrl, '_system');
+                            window.location.href = accountUrl;
                         } else {
                             throw "Not supported by the OIDC server";
                         }

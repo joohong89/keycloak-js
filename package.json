@@ -1,6 +1,6 @@
 {
   "name": "keycloak-js",
-  "version": "15.0.2",
+  "version": "15.0.3",
   "description": "This is a copy from keycloak-js files from the master branch of keycloak. There are addtional implementation of Adapters for capacitor. ",
   "main": "dist/keycloak.js",
   "scripts": {
